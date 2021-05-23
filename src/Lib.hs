@@ -9,82 +9,129 @@ Portability : POSIX
 |-}
 
 module Lib
-    ( someFunc
+    ( decode
+    , createRndSolution
+    , mse
+    , ga
     ) where
 
--- Solução: ([Bool], [Int])
--- População: [Solução]
--- nVars*nTerms
+import System.Random
+import Data.List.Split hiding (split)
 
 -- | Generates the initial random population 
-genInitialPopulation :: Int -> Int -> Int -> [([Bool], [Int])]
-genInitialPopulation nPop nVars nTerms = [createRndSolution (nVars*nTerms) | n <- [1..nPop]]
+genInitialPopulation :: Int -> Int -> Int -> StdGen -> ([([Bool], [Int])], StdGen)
+genInitialPopulation nPop nVars nTerms g = go nPop [] g
+  where
+    len          = nVars * nTerms 
+
+    go 0 pop g = (pop, g)
+    go n pop g = let (sol, g') = createRndSolution len g
+                 in  go (n-1) (sol:pop) g'
 
 -- | Creates a random solution 
-createRndSolution :: Int -> ([Bool], [Int])
-createRndSolution nLen = (vecBool, vecInt)
+createRndSolution :: Int -> StdGen -> (([Bool], [Int]), StdGen)
+createRndSolution nLen g = ((vecBool, vecInt), g'')
   where
-    vecBool = take nLen $ cycle [False, True]
-    vecInt  = take nLen $ cycle [1 .. 5]
+    (g', g'')  = split g
+    (g1', g2') = split g'
+    vecBool    = take nLen $ randomRs (False, True) g1'
+    vecInt     = take nLen $ randomRs (1, 5) g2'
 
 -- | applies crossover in the population 
-applyCrossover :: [([Bool], [Int])] -> [([Bool], [Int])]
-applyCrossover pop = [crossover (choose pop) (choose pop) | _ <- [1..length pop]]
-  where
-    choose pop = pop !! (length pop `div` 3)
+applyCrossover :: [([Bool], [Int])] -> StdGen -> ([([Bool], [Int])], StdGen)
+applyCrossover pop g = go nPop [] g
+-- replicate (length pop) (crossover (choose pop) (choose pop))
+  where 
+    nPop         = length pop 
+    chooseRnd g' = let (ix, g'') = randomR (0, nPop - 1) g'
+                   in  (pop !! ix, g'')
+    go 0 pop' g' = (pop', g')
+    go n pop' g' = let (sol1, g1) = chooseRnd g'
+                       (sol2, g2) = chooseRnd g1
+                       (sol,  g3) = crossover sol1 sol2 g2
+                   in  go (n-1) (sol:pop') g3
 
 -- | Creates a new solution from the combination of two solutions 
-crossover :: ([Bool], [Int]) -> ([Bool], [Int]) -> ([Bool], [Int])
-crossover (p1Bool, p1Int) (p2Bool, p2Int) = (childBool, childInt)
+crossover :: ([Bool], [Int]) -> ([Bool], [Int]) -> StdGen -> (([Bool], [Int]), StdGen)
+crossover (p1Bool, p1Int) (p2Bool, p2Int) g = ((childBool, childInt), g')
   where
-    ix        = length p1Bool `div` 2
-    childBool = take ix p1Bool ++ drop ix p2Bool
-    childInt  = take ix p1Int  ++ drop ix p2Int
+    (ix, g')    = randomR (0, length p1Bool - 1) g
+    childBool   = cx ix p1Bool p2Bool
+    childInt    = cx ix p1Int  p2Int
+    cx ix xs ys = take ix xs ++ drop ix ys
 
 p1 = ([True, False, False, True], [1,1,3,5] :: [Int])
 p2 = ([False, False, True, False], [3,1,4,2] :: [Int])
 
 -- | Applies mutation in the population 
-applyMutation :: [([Bool], [Int])] -> [([Bool], [Int])]
-applyMutation pop = [mutate p | p <- pop]
+applyMutation :: [([Bool], [Int])] -> StdGen -> ([([Bool], [Int])], StdGen) 
+applyMutation pop g = go pop [] g
+  where
+    go [] pop' g' = (pop', g')
+    go (p:ps) pop' g' = let (p', g'') = mutate 0.01 p g'
+                        in  go ps (p':pop') g''
 
 -- | Mutates a single solution
-mutate :: ([Bool], [Int]) -> ([Bool], [Int])
-mutate (vecBool, vecInt) = (vecBool', vecInt')
+mutate :: Double -> ([Bool], [Int]) -> StdGen -> (([Bool], [Int]), StdGen)
+mutate prob (vecBool, vecInt) g = 
+  let (vecBool', g') = mutateBool vecBool [] g
+      (vecInt', g'') = mutateInt  vecInt  [] g'
+  in  ((vecBool', vecInt'), g'')
   where
-    b  = True -- False: mutates vecBool, True: mutates vecInt 
-    ix = length vecBool `div` 2
-    vecBool' = if not b then changeAtRndBool ix vecBool else vecBool
-    vecInt'  = if b     then changeAtRndInt ix vecInt  else vecInt
+    mutateBool []     bs' g' = (reverse bs', g')
+    mutateBool (b:bs) bs' g' = let (p, g'') = randomR (0.0, 1.0) g'
+                                   (b', g''') = if p <= prob
+                                                 then random g''
+                                                 else (b, g'')
+                               in  mutateBool bs (b':bs') g''' 
+    mutateInt []  is' g'    = (reverse is', g')
+    mutateInt (i:is) is' g' = let (p, g'') = randomR (0.0, 1.0) g'
+                                  (i', g''') = if p <= prob
+                                                  then randomR (1, 5) g''
+                                                  else (i, g'')
+                              in  mutateInt is (i':is') g'''
 
--- | Replaces ix-th element with x 
-change :: Int -> a -> [a] -> [a]
-change ix x xs = take ix xs ++ (x : drop (ix+1) xs)
+select :: Int -> [([Bool], [Int])] -> StdGen -> ([([Bool], [Int])], StdGen)
+select n pop g = (take n pop, g)
 
--- | Replaces in a bool vector 
-changeAtRndBool :: Int -> [Bool] -> [Bool]
-changeAtRndBool ix vec = change ix x vec
-  where x = not (vec !! ix)
+-- beta0 + beta1 * t1 + beta2 * t2... 
+decode :: [[Double]] -> [Double] -> ([Bool], [Int]) -> [Double]
+decode xss betas sol = map (evalPoly sol betas) xss
 
--- | Replaces in a Int vector 
-changeAtRndInt :: Int -> [Int] -> [Int]
-changeAtRndInt ix vec = change ix x vec
-  where x = (((vec !! ix) * 10 + 3) `mod` 5) + 1
+evalPoly :: ([Bool], [Int]) -> [Double] -> [Double] -> Double
+evalPoly (vecBool, vecInt) (b0:bs) xs = b0 + foldr f 0.0 (zip bs terms)
+  where
+    nVars           = length xs
+    termsBools      = chunksOf nVars vecBool
+    termsInts       = chunksOf nVars vecInt
+    terms           = zip termsBools termsInts
+    f (beta, t) acc = beta * evalTerm xs t + acc
 
-select :: Int -> [([Bool], [Int])] -> [([Bool], [Int])]
-select = take
+evalTerm :: [Double] -> ([Bool], [Int]) -> Double
+evalTerm xs' (vecBool, vecInt) = go vecBool vecInt xs' 1
+  where
+    go [] _ _ acc = acc
+    go _ [] _ acc = acc
+    go _ _ [] acc = acc
+    go (False:bs) (k:ks) (x:xs) acc = go bs ks xs acc
+    go (True:bs)  (k:ks) (x:xs) acc = go bs ks xs (acc * x^k)
+
+mse :: [Double] -> [Double] -> Double
+mse ys ysHat = go ys ysHat 0.0 0.0
+  where
+    go [] _ accS accL             = accS / accL
+    go _ [] accS accL             = accS / accL
+    go (y:ys') (yH:ysH) accS accL = go ys' ysH (accS + (y-yH)^2) (accL + 1.0)
 
 -- | Main function for Genetic Algorithm
-ga :: Int -> Int -> Int -> Int -> [([Bool], [Int])]
-ga it nPop nVars nTerms =
-  let pop = genInitialPopulation nPop nVars nTerms
-  in  step it pop
-    where
-      step 0 pop = pop
-      step n pop = let children  = applyCrossover pop
-                       children' = applyMutation children
-                       pop'      = select nPop (children' ++ pop)
-                    in step (n-1) pop'
+ga :: Int -> Int -> Int -> Int -> StdGen -> ([([Bool], [Int])], StdGen)
+ga it nPop nVars nTerms g = step it pop0 g1
+  where
+   (pop0, g1) = genInitialPopulation nPop nVars nTerms g
 
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+   step 0 pop g2 = (pop, g2)
+   step n pop g2 = let (children, g3)  = applyCrossover pop g2
+                       (children', g4) = applyMutation children g3
+                       (pop', g5)      = select nPop (children' ++ pop) g4
+                  in step (n-1) pop' g5
+
