@@ -22,5 +22,7 @@ main = do args <- getArgs
               createSol        = createRndSolution (nVars*nTerms) fitness
               cross            = crossover fitness
               mut              = mutate 0.01 fitness
+              (pops, _)        = ga 100 nPop createSol cross mut fitness sel g
 
-          mapM_ print $ fst $ ga 100 nPop createSol cross mut fitness sel g
+          mapM_ print (last pops)
+          generateReports xss ys pops

@@ -13,7 +13,7 @@ module GA
   , createRndSolution
   , crossover
   , mutate
-  , Solution(Sol) 
+  , Solution(..) 
   , Population
   , Fitness
   ) where
@@ -35,8 +35,6 @@ instance Ord Solution where
 
 type Population     = [Solution]
 type Fitness        = [Bool] -> [Int] -> Solution
-
-
 
 -- | Creates a random solution 
 createRndSolution :: Int -> Fitness -> StdGen -> (Solution, StdGen)

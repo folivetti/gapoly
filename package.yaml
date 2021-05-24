@@ -24,6 +24,7 @@ dependencies:
 - split
 - random >= 1.2
 - hmatrix
+- hvega
 
 library:
   source-dirs: src
@@ -36,6 +37,8 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -O2 
+    - -optc-O3 
     dependencies:
     - gapoly
     when:

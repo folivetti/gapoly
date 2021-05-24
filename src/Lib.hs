@@ -16,11 +16,13 @@ module Lib
     , crossover
     , mutate
     , ga
+    , generateReports
     ) where
 
 import GA
 import Fitness
 import Dataset
+import Report
 
 import System.Random
 
@@ -42,13 +44,13 @@ constSnd :: (b -> c) -> a -> b -> c
 constSnd f a = f 
 
 -- | Main function for Genetic Algorithm
-ga :: Int -> Int -> CreateSolution -> Crossover -> Mutation -> Fitness -> Selection -> StdGen -> (Population, StdGen)
-ga it nPop createSol cross mut fit sel g = step it pop0 g1
+ga :: Int -> Int -> CreateSolution -> Crossover -> Mutation -> Fitness -> Selection -> StdGen -> ([Population], StdGen)
+ga it nPop createSol cross mut fit sel g = step it [pop0] g1
   where
    (pop0, g1) = sequenceRandom (constSnd createSol) [1..nPop] g 
 
-   step 0 pop g2 = (pop, g2)
-   step n pop g2 = let (children, g3)  = sequenceRandom (constSnd $ cross pop) [1..nPop] g2
-                       (children', g4) = sequenceRandom mut children g3
-                       (pop', g5)      = sel (children' ++ pop) g4
-                  in step (n-1) pop' g5
+   step 0 ps g2     = (reverse ps, g2)
+   step n (p:ps) g2 = let (children, g3)  = sequenceRandom (constSnd $ cross p) [1..nPop] g2
+                          (children', g4) = sequenceRandom mut children g3
+                          (pop', g5)      = sel (children' ++ p) g4
+                      in step (n-1) (pop':p:ps) g5

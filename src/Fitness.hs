@@ -1,3 +1,4 @@
+{-# language BangPatterns #-}
 {-|
 Module      : Fitness
 Description : Fitness Function for Genetic Algorithm for Poly Regression
@@ -8,7 +9,7 @@ Stability   : experimental
 Portability : POSIX
 |-}
 
-module Fitness (evalFitness) where
+module Fitness (evalFitness, decode) where
 
 import GA
 import Data.List.Split hiding (split)
@@ -30,25 +31,30 @@ evalFitness nTerms xss ys vecBool vecInt = Sol vecBool vecInt betas f
 
 -- | Decodes the polynomial into a transformed matrix 
 decode :: [[Double]] -> [Bool] -> [Int] -> Matrix Double
-decode xss vecBool vecInt = 1.0 ||| fromRows (map (evalPoly vecBool vecInt) xss)
+decode xss vecBool vecInt = fromRows (map (evalPoly vecBool vecInt) xss)
 
 -- | Eval a single row from the dataset 
 evalPoly :: [Bool] -> [Int] -> [Double] -> Vector Double
-evalPoly vecBool vecInt xs = fromList $ zipWith (evalTerm xs) termsBools termsInts
+evalPoly vecBool vecInt xs = fromList $ 1.0 : go vecBool vecInt 
+-- zipWith (evalTerm xs) termsBools termsInts
   where
     nVars           = length xs
-    termsBools      = chunksOf nVars vecBool
-    termsInts       = chunksOf nVars vecInt
+
+    go [] [] = []
+    go bs is = let (bsVars, bs') = splitAt nVars bs 
+                   (isVars, is') = splitAt nVars is
+                   term          = evalTerm xs bsVars isVars
+               in  term `seq` term : go bs' is' 
 
 -- | Eval a term of the polynomial 
 evalTerm :: [Double] -> [Bool] -> [Int] -> Double
 evalTerm xs' vecBool vecInt = go vecBool vecInt xs' 1
   where
-    go [] _ _ acc = acc
-    go _ [] _ acc = acc
-    go _ _ [] acc = acc
-    go (False:bs) (k:ks) (x:xs) acc = go bs ks xs acc
-    go (True:bs)  (k:ks) (x:xs) acc = go bs ks xs (acc * x^k)
+    go [] _ _ !acc = acc
+    go _ [] _ !acc = acc
+    go _ _ [] !acc = acc
+    go (False:bs) (k:ks) (x:xs) !acc = go bs ks xs acc
+    go (True:bs)  (k:ks) (x:xs) !acc = go bs ks xs (acc * x^k)
 
 -- | Calculates the mean squared error
 mse :: Vector Double -> Vector Double -> Double
