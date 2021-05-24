@@ -1,0 +1,66 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">{-|
+Module      : Dataset
+Description : Utility functions to load the data
+Copyright   : (c) Fabricio Olivetti de Franca, 2021
+License     : GPL-3
+Maintainer  : fabricio.olivetti@gmail.com
+Stability   : experimental
+Portability : POSIX
+|-}</span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Dataset</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dataset.html#parseFile"><span class="hs-identifier">parseFile</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-12"></span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Numeric.LinearAlgebra</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Vector</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">fromList</span></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.List.Split</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">splitOn</span></span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- | parse the file and returns the training data, target values and number of vars</span><span>
+</span><span id="line-17"></span><span class="annot"><a href="Dataset.html#parseFile"><span class="hs-identifier hs-type">parseFile</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="hs-special">[</span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span class="hs-special">]</span><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Vector</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span id="parseFile"><span class="annot"><span class="annottext">parseFile :: String -&gt; ([[Double]], Vector Double, Int)
+</span><a href="Dataset.html#parseFile"><span class="hs-identifier hs-var hs-var">parseFile</span></a></span></span><span> </span><span id="local-6989586621679037023"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679037023"><span class="hs-identifier hs-var">css</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[[Double]]
+</span><a href="#local-6989586621679037022"><span class="hs-identifier hs-var">xss</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Double] -&gt; Vector Double
+forall a. Storable a =&gt; [a] -&gt; Vector a
+</span><span class="hs-identifier hs-var">fromList</span></span><span> </span><span class="annot"><span class="annottext">[Double]
+</span><a href="#local-6989586621679037021"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679037020"><span class="hs-identifier hs-var">nVars</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-keyword">where</span><span> </span><span>
+</span><span id="line-20"></span><span>    </span><span id="local-6989586621679037019"><span class="annot"><span class="annottext">zss :: [[Double]]
+</span><a href="#local-6989586621679037019"><span class="hs-identifier hs-var hs-var">zss</span></a></span></span><span>   </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(String -&gt; [Double]) -&gt; [String] -&gt; [[Double]]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(String -&gt; Double) -&gt; [String] -&gt; [Double]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Double
+forall a. Read a =&gt; String -&gt; a
+</span><span class="hs-identifier hs-var">read</span></span><span> </span><span class="annot"><span class="annottext">([String] -&gt; [Double])
+-&gt; (String -&gt; [String]) -&gt; String -&gt; [Double]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; [String]
+forall a. Eq a =&gt; [a] -&gt; [a] -&gt; [[a]]
+</span><span class="hs-identifier hs-var">splitOn</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;,&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([String] -&gt; [[Double]]) -&gt; [String] -&gt; [[Double]]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; [String]
+</span><span class="hs-identifier hs-var">lines</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679037023"><span class="hs-identifier hs-var">css</span></a></span><span>
+</span><span id="line-21"></span><span>    </span><span id="local-6989586621679037021"><span class="annot"><span class="annottext">ys :: [Double]
+</span><a href="#local-6989586621679037021"><span class="hs-identifier hs-var hs-var">ys</span></a></span></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">([Double] -&gt; Double) -&gt; [[Double]] -&gt; [Double]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">[Double] -&gt; Double
+forall a. [a] -&gt; a
+</span><span class="hs-identifier hs-var">last</span></span><span> </span><span class="annot"><span class="annottext">[[Double]]
+</span><a href="#local-6989586621679037019"><span class="hs-identifier hs-var">zss</span></a></span><span>
+</span><span id="line-22"></span><span>    </span><span id="local-6989586621679037022"><span class="annot"><span class="annottext">xss :: [[Double]]
+</span><a href="#local-6989586621679037022"><span class="hs-identifier hs-var hs-var">xss</span></a></span></span><span>   </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">([Double] -&gt; [Double]) -&gt; [[Double]] -&gt; [[Double]]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">[Double] -&gt; [Double]
+forall a. [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">init</span></span><span> </span><span class="annot"><span class="annottext">[[Double]]
+</span><a href="#local-6989586621679037019"><span class="hs-identifier hs-var">zss</span></a></span><span>
+</span><span id="line-23"></span><span>    </span><span id="local-6989586621679037020"><span class="annot"><span class="annottext">nVars :: Int
+</span><a href="#local-6989586621679037020"><span class="hs-identifier hs-var hs-var">nVars</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Double] -&gt; Int
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[[Double]] -&gt; [Double]
+forall a. [a] -&gt; a
+</span><span class="hs-identifier hs-var">head</span></span><span> </span><span class="annot"><span class="annottext">[[Double]]
+</span><a href="#local-6989586621679037022"><span class="hs-identifier hs-var">xss</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span></pre></body></html>

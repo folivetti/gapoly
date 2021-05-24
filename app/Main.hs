@@ -3,15 +3,9 @@ module Main where
 import System.Environment
 import System.Random
 import Data.List.Split
+import Numeric.LinearAlgebra
 
 import Lib
-
-parseFile :: String -> ([[Double]], [Double])
-parseFile css = (xss, ys)
-  where 
-    zss = map (map read . splitOn ",") $ lines css 
-    ys  = map last zss 
-    xss = map init zss 
 
 main :: IO ()
 main = do args <- getArgs 
@@ -20,10 +14,13 @@ main = do args <- getArgs
                            [] -> error "Usage: stack run dataname"
                            (x:_) -> x 
           dat <- readFile dataname
-          let (xss, ys)   = parseFile dat 
-              nVars          = length (head xss)
-              betas          = replicate nVars 1.0 :: [Double]
-              n              = nVars * 3
-              fitness bs sol = mse ys $ decode xss bs sol
-              (s, g')        = createRndSolution n g
-          print $ ga 10 4 nVars 3 g
+          let (xss, ys, nVars) = parseFile dat
+              nTerms           = 5
+              nPop             = 100
+              fitness          = evalFitness nTerms xss ys
+              sel              = select nPop
+              createSol        = createRndSolution (nVars*nTerms) fitness
+              cross            = crossover fitness
+              mut              = mutate 0.01 fitness
+
+          mapM_ print $ fst $ ga 100 nPop createSol cross mut fitness sel g

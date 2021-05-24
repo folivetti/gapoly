@@ -23,6 +23,7 @@ dependencies:
 - base >= 4.7 && < 5
 - split
 - random >= 1.2
+- hmatrix
 
 library:
   source-dirs: src

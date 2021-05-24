@@ -1,0 +1,209 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">{-|
+Module      : Fitness
+Description : Fitness Function for Genetic Algorithm for Poly Regression
+Copyright   : (c) Fabricio Olivetti de Franca, 2021
+License     : GPL-3
+Maintainer  : fabricio.olivetti@gmail.com
+Stability   : experimental
+Portability : POSIX
+|-}</span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Fitness</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Fitness.html#evalFitness"><span class="hs-identifier">evalFitness</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-12"></span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="GA.html"><span class="hs-identifier">GA</span></a></span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.List.Split</span></span><span> </span><span class="hs-keyword">hiding</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">split</span></span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Numeric.LinearAlgebra</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(&lt;\&gt;)</span></span><span class="hs-special">,</span><span class="annot"><span class="hs-operator">(#&gt;)</span></span><span class="hs-special">,</span><span class="annot"><span class="hs-operator">(|||)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">sumElements</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">size</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Matrix</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Vector</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">fromRows</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">fromList</span></span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- | Creates a fitness function </span><span>
+</span><span id="line-18"></span><span class="annot"><a href="Fitness.html#evalFitness"><span class="hs-identifier hs-type">evalFitness</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>            </span><span class="hs-comment">-- ^ number of terms</span><span>
+</span><span id="line-19"></span><span>            </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span class="hs-special">]</span><span class="hs-special">]</span><span>     </span><span class="hs-comment">-- ^ matrix X</span><span>
+</span><span id="line-20"></span><span>            </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Vector</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span>  </span><span class="hs-comment">-- ^ vector y</span><span>
+</span><span id="line-21"></span><span>            </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span class="hs-special">]</span><span>         </span><span class="hs-comment">-- ^ variables of the poly</span><span>
+</span><span id="line-22"></span><span>            </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">]</span><span>          </span><span class="hs-comment">-- ^ exponents of the poly</span><span>
+</span><span id="line-23"></span><span>            </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="GA.html#Solution"><span class="hs-identifier hs-type">Solution</span></a></span><span> </span><span>
+</span><span id="line-24"></span><span id="evalFitness"><span class="annot"><span class="annottext">evalFitness :: Int -&gt; [[Double]] -&gt; Vector Double -&gt; [Bool] -&gt; [Int] -&gt; Solution
+</span><a href="Fitness.html#evalFitness"><span class="hs-identifier hs-var hs-var">evalFitness</span></a></span></span><span> </span><span id="local-6989586621679037259"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679037259"><span class="hs-identifier hs-var">nTerms</span></a></span></span><span> </span><span id="local-6989586621679037258"><span class="annot"><span class="annottext">[[Double]]
+</span><a href="#local-6989586621679037258"><span class="hs-identifier hs-var">xss</span></a></span></span><span> </span><span id="local-6989586621679037257"><span class="annot"><span class="annottext">Vector Double
+</span><a href="#local-6989586621679037257"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span id="local-6989586621679037256"><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679037256"><span class="hs-identifier hs-var">vecBool</span></a></span></span><span> </span><span id="local-6989586621679037255"><span class="annot"><span class="annottext">[Int]
+</span><a href="#local-6989586621679037255"><span class="hs-identifier hs-var">vecInt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Bool] -&gt; [Int] -&gt; Vector Double -&gt; Double -&gt; Solution
+</span><a href="GA.html#Sol"><span class="hs-identifier hs-var">Sol</span></a></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679037256"><span class="hs-identifier hs-var">vecBool</span></a></span><span> </span><span class="annot"><span class="annottext">[Int]
+</span><a href="#local-6989586621679037255"><span class="hs-identifier hs-var">vecInt</span></a></span><span> </span><span class="annot"><span class="annottext">Vector Double
+</span><a href="#local-6989586621679037253"><span class="hs-identifier hs-var">betas</span></a></span><span> </span><span class="annot"><span class="annottext">Double
+</span><a href="#local-6989586621679037252"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-26"></span><span>    </span><span id="local-6989586621679037251"><span class="annot"><span class="annottext">zss :: Matrix Double
+</span><a href="#local-6989586621679037251"><span class="hs-identifier hs-var hs-var">zss</span></a></span></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[[Double]] -&gt; [Bool] -&gt; [Int] -&gt; Matrix Double
+</span><a href="Fitness.html#decode"><span class="hs-identifier hs-var">decode</span></a></span><span> </span><span class="annot"><span class="annottext">[[Double]]
+</span><a href="#local-6989586621679037258"><span class="hs-identifier hs-var">xss</span></a></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679037256"><span class="hs-identifier hs-var">vecBool</span></a></span><span> </span><span class="annot"><span class="annottext">[Int]
+</span><a href="#local-6989586621679037255"><span class="hs-identifier hs-var">vecInt</span></a></span><span>
+</span><span id="line-27"></span><span>    </span><span id="local-6989586621679037253"><span class="annot"><span class="annottext">betas :: Vector Double
+</span><a href="#local-6989586621679037253"><span class="hs-identifier hs-var hs-var">betas</span></a></span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Matrix Double
+</span><a href="#local-6989586621679037251"><span class="hs-identifier hs-var">zss</span></a></span><span> </span><span class="annot"><span class="annottext">Matrix Double -&gt; Vector Double -&gt; Vector Double
+forall (c :: * -&gt; *) t.
+(LSDiv c, Field t) =&gt;
+Matrix t -&gt; c t -&gt; c t
+</span><span class="hs-operator hs-var">&lt;\&gt;</span></span><span> </span><span class="annot"><span class="annottext">Vector Double
+</span><a href="#local-6989586621679037257"><span class="hs-identifier hs-var">ys</span></a></span><span> </span><span>
+</span><span id="line-28"></span><span>    </span><span id="local-6989586621679037249"><span class="annot"><span class="annottext">ysHat :: Vector Double
+</span><a href="#local-6989586621679037249"><span class="hs-identifier hs-var hs-var">ysHat</span></a></span></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Matrix Double
+</span><a href="#local-6989586621679037251"><span class="hs-identifier hs-var">zss</span></a></span><span> </span><span class="annot"><span class="annottext">Matrix Double -&gt; Vector Double -&gt; Vector Double
+forall t. Numeric t =&gt; Matrix t -&gt; Vector t -&gt; Vector t
+</span><span class="hs-operator hs-var">#&gt;</span></span><span> </span><span class="annot"><span class="annottext">Vector Double
+</span><a href="#local-6989586621679037253"><span class="hs-identifier hs-var">betas</span></a></span><span> </span><span>
+</span><span id="line-29"></span><span>    </span><span id="local-6989586621679037252"><span class="annot"><span class="annottext">f :: Double
+</span><a href="#local-6989586621679037252"><span class="hs-identifier hs-var hs-var">f</span></a></span></span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Vector Double -&gt; Vector Double -&gt; Double
+</span><a href="Fitness.html#mse"><span class="hs-identifier hs-var">mse</span></a></span><span> </span><span class="annot"><span class="annottext">Vector Double
+</span><a href="#local-6989586621679037257"><span class="hs-identifier hs-var">ys</span></a></span><span> </span><span class="annot"><span class="annottext">Vector Double
+</span><a href="#local-6989586621679037249"><span class="hs-identifier hs-var">ysHat</span></a></span><span>
+</span><span id="line-30"></span><span>
+</span><span id="line-31"></span><span class="hs-comment">-- | Decodes the polynomial into a transformed matrix </span><span>
+</span><span id="line-32"></span><span class="annot"><a href="Fitness.html#decode"><span class="hs-identifier hs-type">decode</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span class="hs-special">]</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Matrix</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span>
+</span><span id="line-33"></span><span id="decode"><span class="annot"><span class="annottext">decode :: [[Double]] -&gt; [Bool] -&gt; [Int] -&gt; Matrix Double
+</span><a href="Fitness.html#decode"><span class="hs-identifier hs-var hs-var">decode</span></a></span></span><span> </span><span id="local-6989586621679037247"><span class="annot"><span class="annottext">[[Double]]
+</span><a href="#local-6989586621679037247"><span class="hs-identifier hs-var">xss</span></a></span></span><span> </span><span id="local-6989586621679037246"><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679037246"><span class="hs-identifier hs-var">vecBool</span></a></span></span><span> </span><span id="local-6989586621679037245"><span class="annot"><span class="annottext">[Int]
+</span><a href="#local-6989586621679037245"><span class="hs-identifier hs-var">vecInt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Matrix Double
+</span><span class="hs-number">1.0</span></span><span> </span><span class="annot"><span class="annottext">Matrix Double -&gt; Matrix Double -&gt; Matrix Double
+forall t. Element t =&gt; Matrix t -&gt; Matrix t -&gt; Matrix t
+</span><span class="hs-operator hs-var">|||</span></span><span> </span><span class="annot"><span class="annottext">[Vector Double] -&gt; Matrix Double
+forall t. Element t =&gt; [Vector t] -&gt; Matrix t
+</span><span class="hs-identifier hs-var">fromRows</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([Double] -&gt; Vector Double) -&gt; [[Double]] -&gt; [Vector Double]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Bool] -&gt; [Int] -&gt; [Double] -&gt; Vector Double
+</span><a href="Fitness.html#evalPoly"><span class="hs-identifier hs-var">evalPoly</span></a></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679037246"><span class="hs-identifier hs-var">vecBool</span></a></span><span> </span><span class="annot"><span class="annottext">[Int]
+</span><a href="#local-6989586621679037245"><span class="hs-identifier hs-var">vecInt</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[[Double]]
+</span><a href="#local-6989586621679037247"><span class="hs-identifier hs-var">xss</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span class="hs-comment">-- | Eval a single row from the dataset </span><span>
+</span><span id="line-36"></span><span class="annot"><a href="Fitness.html#evalPoly"><span class="hs-identifier hs-type">evalPoly</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Vector</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span>
+</span><span id="line-37"></span><span id="evalPoly"><span class="annot"><span class="annottext">evalPoly :: [Bool] -&gt; [Int] -&gt; [Double] -&gt; Vector Double
+</span><a href="Fitness.html#evalPoly"><span class="hs-identifier hs-var hs-var">evalPoly</span></a></span></span><span> </span><span id="local-6989586621679037243"><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679037243"><span class="hs-identifier hs-var">vecBool</span></a></span></span><span> </span><span id="local-6989586621679037242"><span class="annot"><span class="annottext">[Int]
+</span><a href="#local-6989586621679037242"><span class="hs-identifier hs-var">vecInt</span></a></span></span><span> </span><span id="local-6989586621679037241"><span class="annot"><span class="annottext">[Double]
+</span><a href="#local-6989586621679037241"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Double] -&gt; Vector Double
+forall a. Storable a =&gt; [a] -&gt; Vector a
+</span><span class="hs-identifier hs-var">fromList</span></span><span> </span><span class="annot"><span class="annottext">([Double] -&gt; Vector Double) -&gt; [Double] -&gt; Vector Double
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">([Bool] -&gt; [Int] -&gt; Double) -&gt; [[Bool]] -&gt; [[Int]] -&gt; [Double]
+forall a b c. (a -&gt; b -&gt; c) -&gt; [a] -&gt; [b] -&gt; [c]
+</span><span class="hs-identifier hs-var">zipWith</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Double] -&gt; [Bool] -&gt; [Int] -&gt; Double
+</span><a href="Fitness.html#evalTerm"><span class="hs-identifier hs-var">evalTerm</span></a></span><span> </span><span class="annot"><span class="annottext">[Double]
+</span><a href="#local-6989586621679037241"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[[Bool]]
+</span><a href="#local-6989586621679037238"><span class="hs-identifier hs-var">termsBools</span></a></span><span> </span><span class="annot"><span class="annottext">[[Int]]
+</span><a href="#local-6989586621679037237"><span class="hs-identifier hs-var">termsInts</span></a></span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-39"></span><span>    </span><span id="local-6989586621679037236"><span class="annot"><span class="annottext">nVars :: Int
+</span><a href="#local-6989586621679037236"><span class="hs-identifier hs-var hs-var">nVars</span></a></span></span><span>           </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Double] -&gt; Int
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[Double]
+</span><a href="#local-6989586621679037241"><span class="hs-identifier hs-var">xs</span></a></span><span>
+</span><span id="line-40"></span><span>    </span><span id="local-6989586621679037238"><span class="annot"><span class="annottext">termsBools :: [[Bool]]
+</span><a href="#local-6989586621679037238"><span class="hs-identifier hs-var hs-var">termsBools</span></a></span></span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; [Bool] -&gt; [[Bool]]
+forall e. Int -&gt; [e] -&gt; [[e]]
+</span><span class="hs-identifier hs-var">chunksOf</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679037236"><span class="hs-identifier hs-var">nVars</span></a></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679037243"><span class="hs-identifier hs-var">vecBool</span></a></span><span>
+</span><span id="line-41"></span><span>    </span><span id="local-6989586621679037237"><span class="annot"><span class="annottext">termsInts :: [[Int]]
+</span><a href="#local-6989586621679037237"><span class="hs-identifier hs-var hs-var">termsInts</span></a></span></span><span>       </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; [Int] -&gt; [[Int]]
+forall e. Int -&gt; [e] -&gt; [[e]]
+</span><span class="hs-identifier hs-var">chunksOf</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679037236"><span class="hs-identifier hs-var">nVars</span></a></span><span> </span><span class="annot"><span class="annottext">[Int]
+</span><a href="#local-6989586621679037242"><span class="hs-identifier hs-var">vecInt</span></a></span><span>
+</span><span id="line-42"></span><span>
+</span><span id="line-43"></span><span class="hs-comment">-- | Eval a term of the polynomial </span><span>
+</span><span id="line-44"></span><span class="annot"><a href="Fitness.html#evalTerm"><span class="hs-identifier hs-type">evalTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span>
+</span><span id="line-45"></span><span id="evalTerm"><span class="annot"><span class="annottext">evalTerm :: [Double] -&gt; [Bool] -&gt; [Int] -&gt; Double
+</span><a href="Fitness.html#evalTerm"><span class="hs-identifier hs-var hs-var">evalTerm</span></a></span></span><span> </span><span id="local-6989586621679037233"><span class="annot"><span class="annottext">[Double]
+</span><a href="#local-6989586621679037233"><span class="hs-identifier hs-var">xs'</span></a></span></span><span> </span><span id="local-6989586621679037232"><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679037232"><span class="hs-identifier hs-var">vecBool</span></a></span></span><span> </span><span id="local-6989586621679037231"><span class="annot"><span class="annottext">[Int]
+</span><a href="#local-6989586621679037231"><span class="hs-identifier hs-var">vecInt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Bool] -&gt; [Int] -&gt; [Double] -&gt; Double -&gt; Double
+forall b a. (Integral b, Num a) =&gt; [Bool] -&gt; [b] -&gt; [a] -&gt; a -&gt; a
+</span><a href="#local-6989586621679037230"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679037232"><span class="hs-identifier hs-var">vecBool</span></a></span><span> </span><span class="annot"><span class="annottext">[Int]
+</span><a href="#local-6989586621679037231"><span class="hs-identifier hs-var">vecInt</span></a></span><span> </span><span class="annot"><span class="annottext">[Double]
+</span><a href="#local-6989586621679037233"><span class="hs-identifier hs-var">xs'</span></a></span><span> </span><span class="annot"><span class="annottext">Double
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-47"></span><span>    </span><span id="local-6989586621679037230"><span class="annot"><span class="annottext">go :: [Bool] -&gt; [b] -&gt; [a] -&gt; a -&gt; a
+</span><a href="#local-6989586621679037230"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[b]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[a]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679037229"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679037229"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679037229"><span class="hs-identifier hs-var">acc</span></a></span><span>
+</span><span id="line-48"></span><span>    </span><span class="annot"><a href="#local-6989586621679037230"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[a]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679037228"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679037228"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679037228"><span class="hs-identifier hs-var">acc</span></a></span><span>
+</span><span id="line-49"></span><span>    </span><span class="annot"><a href="#local-6989586621679037230"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">[b]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span id="local-6989586621679037227"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679037227"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679037227"><span class="hs-identifier hs-var">acc</span></a></span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><a href="#local-6989586621679037230"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span id="local-6989586621679037226"><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679037226"><span class="hs-identifier hs-var">bs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679037225"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621679037225"><span class="hs-identifier hs-var">k</span></a></span></span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span id="local-6989586621679037224"><span class="annot"><span class="annottext">[b]
+</span><a href="#local-6989586621679037224"><span class="hs-identifier hs-var">ks</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679037223"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679037223"><span class="hs-identifier hs-var">x</span></a></span></span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span id="local-6989586621679037222"><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679037222"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679037221"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679037221"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Bool] -&gt; [b] -&gt; [a] -&gt; a -&gt; a
+</span><a href="#local-6989586621679037230"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679037226"><span class="hs-identifier hs-var">bs</span></a></span><span> </span><span class="annot"><span class="annottext">[b]
+</span><a href="#local-6989586621679037224"><span class="hs-identifier hs-var">ks</span></a></span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679037222"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679037221"><span class="hs-identifier hs-var">acc</span></a></span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><a href="#local-6989586621679037230"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span id="local-6989586621679037220"><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679037220"><span class="hs-identifier hs-var">bs</span></a></span></span><span class="hs-special">)</span><span>  </span><span class="hs-special">(</span><span id="local-6989586621679037219"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621679037219"><span class="hs-identifier hs-var">k</span></a></span></span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span id="local-6989586621679037218"><span class="annot"><span class="annottext">[b]
+</span><a href="#local-6989586621679037218"><span class="hs-identifier hs-var">ks</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679037217"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679037217"><span class="hs-identifier hs-var">x</span></a></span></span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span id="local-6989586621679037216"><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679037216"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679037215"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679037215"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Bool] -&gt; [b] -&gt; [a] -&gt; a -&gt; a
+</span><a href="#local-6989586621679037230"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679037220"><span class="hs-identifier hs-var">bs</span></a></span><span> </span><span class="annot"><span class="annottext">[b]
+</span><a href="#local-6989586621679037218"><span class="hs-identifier hs-var">ks</span></a></span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679037216"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679037215"><span class="hs-identifier hs-var">acc</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679037217"><span class="hs-identifier hs-var">x</span></a></span><span class="annot"><span class="annottext">a -&gt; b -&gt; a
+forall a b. (Num a, Integral b) =&gt; a -&gt; b -&gt; a
+</span><span class="hs-operator hs-var">^</span></span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621679037219"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span>
+</span><span id="line-53"></span><span class="hs-comment">-- | Calculates the mean squared error</span><span>
+</span><span id="line-54"></span><span class="annot"><a href="Fitness.html#mse"><span class="hs-identifier hs-type">mse</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Vector</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Vector</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span>
+</span><span id="line-55"></span><span id="mse"><span class="annot"><span class="annottext">mse :: Vector Double -&gt; Vector Double -&gt; Double
+</span><a href="Fitness.html#mse"><span class="hs-identifier hs-var hs-var">mse</span></a></span></span><span> </span><span id="local-6989586621679037212"><span class="annot"><span class="annottext">Vector Double
+</span><a href="#local-6989586621679037212"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span id="local-6989586621679037211"><span class="annot"><span class="annottext">Vector Double
+</span><a href="#local-6989586621679037211"><span class="hs-identifier hs-var">ysHat</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Double
+</span><a href="#local-6989586621679037210"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Double -&gt; Double -&gt; Double
+forall a. Fractional a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">/</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Double
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Vector Double -&gt; IndexOf Vector
+forall (c :: * -&gt; *) t. Container c t =&gt; c t -&gt; IndexOf c
+</span><span class="hs-identifier hs-var">size</span></span><span> </span><span class="annot"><span class="annottext">Vector Double
+</span><a href="#local-6989586621679037212"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-57"></span><span>    </span><span id="local-6989586621679037210"><span class="annot"><span class="annottext">s :: Double
+</span><a href="#local-6989586621679037210"><span class="hs-identifier hs-var hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Vector Double -&gt; Double
+forall (c :: * -&gt; *) e. Container c e =&gt; c e -&gt; e
+</span><span class="hs-identifier hs-var">sumElements</span></span><span> </span><span class="annot"><span class="annottext">(Vector Double -&gt; Double) -&gt; Vector Double -&gt; Double
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Vector Double
+</span><a href="#local-6989586621679037212"><span class="hs-identifier hs-var">ys</span></a></span><span> </span><span class="annot"><span class="annottext">Vector Double -&gt; Vector Double -&gt; Vector Double
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Vector Double
+</span><a href="#local-6989586621679037211"><span class="hs-identifier hs-var">ysHat</span></a></span><span class="hs-special">)</span><span class="annot"><span class="annottext">Vector Double -&gt; Integer -&gt; Vector Double
+forall a b. (Num a, Integral b) =&gt; a -&gt; b -&gt; a
+</span><span class="hs-operator hs-var">^</span></span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">2</span></span><span>
+</span><span id="line-58"></span></pre></body></html>

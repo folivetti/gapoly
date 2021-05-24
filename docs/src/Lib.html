@@ -1,0 +1,181 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">{-|
+Module      : Lib
+Description : Main component of your project.
+Copyright   : (c) Fabricio Olivetti de Franca, 2021
+License     : GPL-3
+Maintainer  : fabricio.olivetti@gmail.com
+Stability   : experimental
+Portability : POSIX
+|-}</span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Lib</span><span>
+</span><span id="line-12"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Dataset.html#parseFile"><span class="hs-identifier">parseFile</span></a></span><span>
+</span><span id="line-13"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Fitness.html#evalFitness"><span class="hs-identifier">evalFitness</span></a></span><span>    </span><span>
+</span><span id="line-14"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="GA.html#select"><span class="hs-identifier">select</span></a></span><span> </span><span>
+</span><span id="line-15"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="GA.html#createRndSolution"><span class="hs-identifier">createRndSolution</span></a></span><span>
+</span><span id="line-16"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="GA.html#crossover"><span class="hs-identifier">crossover</span></a></span><span>
+</span><span id="line-17"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="GA.html#mutate"><span class="hs-identifier">mutate</span></a></span><span>
+</span><span id="line-18"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Lib.html#ga"><span class="hs-identifier">ga</span></a></span><span>
+</span><span id="line-19"></span><span>    </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="GA.html"><span class="hs-identifier">GA</span></a></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Fitness.html"><span class="hs-identifier">Fitness</span></a></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Dataset.html"><span class="hs-identifier">Dataset</span></a></span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Random</span></span><span>
+</span><span id="line-26"></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">type</span><span> </span><span id="Crossover"><span class="annot"><a href="Lib.html#Crossover"><span class="hs-identifier hs-var">Crossover</span></a></span></span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="GA.html#Population"><span class="hs-identifier hs-type">Population</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StdGen</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="GA.html#Solution"><span class="hs-identifier hs-type">Solution</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StdGen</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">type</span><span> </span><span id="Selection"><span class="annot"><a href="Lib.html#Selection"><span class="hs-identifier hs-var">Selection</span></a></span></span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="GA.html#Population"><span class="hs-identifier hs-type">Population</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StdGen</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="GA.html#Population"><span class="hs-identifier hs-type">Population</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StdGen</span></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">type</span><span> </span><span id="CreateSolution"><span class="annot"><a href="Lib.html#CreateSolution"><span class="hs-identifier hs-var">CreateSolution</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StdGen</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="GA.html#Solution"><span class="hs-identifier hs-type">Solution</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StdGen</span></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">type</span><span> </span><span id="Mutation"><span class="annot"><a href="Lib.html#Mutation"><span class="hs-identifier hs-var">Mutation</span></a></span></span><span>       </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="GA.html#Solution"><span class="hs-identifier hs-type">Solution</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StdGen</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="GA.html#Solution"><span class="hs-identifier hs-type">Solution</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StdGen</span></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span>
+</span><span id="line-32"></span><span class="hs-comment">-- | Sequence random actions that generates a population </span><span>
+</span><span id="line-33"></span><span id="local-6989586621679037363"><span class="annot"><a href="Lib.html#sequenceRandom"><span class="hs-identifier hs-type">sequenceRandom</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679037363"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StdGen</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="GA.html#Solution"><span class="hs-identifier hs-type">Solution</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StdGen</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679037363"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StdGen</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="GA.html#Population"><span class="hs-identifier hs-type">Population</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StdGen</span></span><span class="hs-special">)</span></span><span>
+</span><span id="line-34"></span><span id="sequenceRandom"><span class="annot"><span class="annottext">sequenceRandom :: (a -&gt; StdGen -&gt; (Solution, StdGen))
+-&gt; [a] -&gt; StdGen -&gt; (Population, StdGen)
+</span><a href="Lib.html#sequenceRandom"><span class="hs-identifier hs-var hs-var">sequenceRandom</span></a></span></span><span> </span><span id="local-6989586621679037344"><span class="annot"><span class="annottext">a -&gt; StdGen -&gt; (Solution, StdGen)
+</span><a href="#local-6989586621679037344"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679037343"><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679037343"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span id="local-6989586621679037342"><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037342"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[a] -&gt; Population -&gt; StdGen -&gt; (Population, StdGen)
+</span><a href="#local-6989586621679037341"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679037343"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037342"><span class="hs-identifier hs-var">g</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-36"></span><span>    </span><span id="local-6989586621679037341"><span class="annot"><span class="annottext">go :: [a] -&gt; Population -&gt; StdGen -&gt; (Population, StdGen)
+</span><a href="#local-6989586621679037341"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span id="local-6989586621679037340"><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037340"><span class="hs-identifier hs-var">pop</span></a></span></span><span> </span><span id="local-6989586621679037339"><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037339"><span class="hs-identifier hs-var">g'</span></a></span></span><span>     </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037340"><span class="hs-identifier hs-var">pop</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037339"><span class="hs-identifier hs-var">g'</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><a href="#local-6989586621679037341"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679037338"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679037338"><span class="hs-identifier hs-var">x</span></a></span></span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span id="local-6989586621679037337"><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679037337"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679037336"><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037336"><span class="hs-identifier hs-var">pop</span></a></span></span><span> </span><span id="local-6989586621679037335"><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037335"><span class="hs-identifier hs-var">g'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">let</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679037334"><span class="annot"><span class="annottext">Solution
+</span><a href="#local-6989586621679037334"><span class="hs-identifier hs-var">sol</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679037333"><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037333"><span class="hs-identifier hs-var">g''</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; StdGen -&gt; (Solution, StdGen)
+</span><a href="#local-6989586621679037344"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679037338"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037335"><span class="hs-identifier hs-var">g'</span></a></span><span>
+</span><span id="line-38"></span><span>                       </span><span class="hs-keyword">in</span><span>  </span><span class="annot"><span class="annottext">[a] -&gt; Population -&gt; StdGen -&gt; (Population, StdGen)
+</span><a href="#local-6989586621679037341"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679037337"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Solution
+</span><a href="#local-6989586621679037334"><span class="hs-identifier hs-var">sol</span></a></span><span class="annot"><span class="annottext">Solution -&gt; Population -&gt; Population
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037336"><span class="hs-identifier hs-var">pop</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037333"><span class="hs-identifier hs-var">g''</span></a></span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="hs-comment">-- | Utility function to ignore first argument</span><span>
+</span><span id="line-41"></span><span id="local-6989586621679037360"><span id="local-6989586621679037361"><span id="local-6989586621679037362"><span class="annot"><a href="Lib.html#constSnd"><span class="hs-identifier hs-type">constSnd</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679037362"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679037361"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679037360"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679037362"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679037361"><span class="hs-identifier hs-type">c</span></a></span></span></span></span><span>
+</span><span id="line-42"></span><span id="constSnd"><span class="annot"><span class="annottext">constSnd :: (b -&gt; c) -&gt; a -&gt; b -&gt; c
+</span><a href="Lib.html#constSnd"><span class="hs-identifier hs-var hs-var">constSnd</span></a></span></span><span> </span><span id="local-6989586621679037331"><span class="annot"><span class="annottext">b -&gt; c
+</span><a href="#local-6989586621679037331"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679037330"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679037330"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">b -&gt; c
+</span><a href="#local-6989586621679037331"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span>
+</span><span id="line-43"></span><span>
+</span><span id="line-44"></span><span class="hs-comment">-- | Main function for Genetic Algorithm</span><span>
+</span><span id="line-45"></span><span class="annot"><a href="Lib.html#ga"><span class="hs-identifier hs-type">ga</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Lib.html#CreateSolution"><span class="hs-identifier hs-type">CreateSolution</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Lib.html#Crossover"><span class="hs-identifier hs-type">Crossover</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Lib.html#Mutation"><span class="hs-identifier hs-type">Mutation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="GA.html#Fitness"><span class="hs-identifier hs-type">Fitness</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Lib.html#Selection"><span class="hs-identifier hs-type">Selection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StdGen</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="GA.html#Population"><span class="hs-identifier hs-type">Population</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">StdGen</span></span><span class="hs-special">)</span><span>
+</span><span id="line-46"></span><span id="ga"><span class="annot"><span class="annottext">ga :: Int
+-&gt; Int
+-&gt; (StdGen -&gt; (Solution, StdGen))
+-&gt; Crossover
+-&gt; Mutation
+-&gt; Fitness
+-&gt; (Population -&gt; StdGen -&gt; (Population, StdGen))
+-&gt; StdGen
+-&gt; (Population, StdGen)
+</span><a href="Lib.html#ga"><span class="hs-identifier hs-var hs-var">ga</span></a></span></span><span> </span><span id="local-6989586621679037329"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679037329"><span class="hs-identifier hs-var">it</span></a></span></span><span> </span><span id="local-6989586621679037328"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679037328"><span class="hs-identifier hs-var">nPop</span></a></span></span><span> </span><span id="local-6989586621679037327"><span class="annot"><span class="annottext">StdGen -&gt; (Solution, StdGen)
+</span><a href="#local-6989586621679037327"><span class="hs-identifier hs-var">createSol</span></a></span></span><span> </span><span id="local-6989586621679037326"><span class="annot"><span class="annottext">Crossover
+</span><a href="#local-6989586621679037326"><span class="hs-identifier hs-var">cross</span></a></span></span><span> </span><span id="local-6989586621679037325"><span class="annot"><span class="annottext">Mutation
+</span><a href="#local-6989586621679037325"><span class="hs-identifier hs-var">mut</span></a></span></span><span> </span><span id="local-6989586621679037324"><span class="annot"><span class="annottext">Fitness
+</span><a href="#local-6989586621679037324"><span class="hs-identifier hs-var">fit</span></a></span></span><span> </span><span id="local-6989586621679037323"><span class="annot"><span class="annottext">Population -&gt; StdGen -&gt; (Population, StdGen)
+</span><a href="#local-6989586621679037323"><span class="hs-identifier hs-var">sel</span></a></span></span><span> </span><span id="local-6989586621679037322"><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037322"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Population -&gt; StdGen -&gt; (Population, StdGen)
+forall t.
+(Eq t, Num t) =&gt;
+t -&gt; Population -&gt; StdGen -&gt; (Population, StdGen)
+</span><a href="#local-6989586621679037321"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679037329"><span class="hs-identifier hs-var">it</span></a></span><span> </span><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037320"><span class="hs-identifier hs-var">pop0</span></a></span><span> </span><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037319"><span class="hs-identifier hs-var">g1</span></a></span><span>
+</span><span id="line-47"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-48"></span><span>   </span><span class="hs-special">(</span><span id="local-6989586621679037320"><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037320"><span class="hs-identifier hs-var">pop0</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679037319"><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037319"><span class="hs-identifier hs-var">g1</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; StdGen -&gt; (Solution, StdGen))
+-&gt; [Int] -&gt; StdGen -&gt; (Population, StdGen)
+forall a.
+(a -&gt; StdGen -&gt; (Solution, StdGen))
+-&gt; [a] -&gt; StdGen -&gt; (Population, StdGen)
+</span><a href="Lib.html#sequenceRandom"><span class="hs-identifier hs-var">sequenceRandom</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(StdGen -&gt; (Solution, StdGen))
+-&gt; Int -&gt; StdGen -&gt; (Solution, StdGen)
+forall b c a. (b -&gt; c) -&gt; a -&gt; b -&gt; c
+</span><a href="Lib.html#constSnd"><span class="hs-identifier hs-var">constSnd</span></a></span><span> </span><span class="annot"><span class="annottext">StdGen -&gt; (Solution, StdGen)
+</span><a href="#local-6989586621679037327"><span class="hs-identifier hs-var">createSol</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-glyph">..</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679037328"><span class="hs-identifier hs-var">nPop</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037322"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span>   </span><span id="local-6989586621679037321"><span class="annot"><span class="annottext">step :: t -&gt; Population -&gt; StdGen -&gt; (Population, StdGen)
+</span><a href="#local-6989586621679037321"><span class="hs-identifier hs-var hs-var">step</span></a></span></span><span> </span><span class="annot"><span class="annottext">t
+</span><span class="hs-number">0</span></span><span> </span><span id="local-6989586621679037318"><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037318"><span class="hs-identifier hs-var">pop</span></a></span></span><span> </span><span id="local-6989586621679037317"><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037317"><span class="hs-identifier hs-var">g2</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037318"><span class="hs-identifier hs-var">pop</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037317"><span class="hs-identifier hs-var">g2</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span>   </span><span class="annot"><a href="#local-6989586621679037321"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span id="local-6989586621679037316"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621679037316"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679037315"><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037315"><span class="hs-identifier hs-var">pop</span></a></span></span><span> </span><span id="local-6989586621679037314"><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037314"><span class="hs-identifier hs-var">g2</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">let</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679037313"><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037313"><span class="hs-identifier hs-var">children</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679037312"><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037312"><span class="hs-identifier hs-var">g3</span></a></span></span><span class="hs-special">)</span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; StdGen -&gt; (Solution, StdGen))
+-&gt; [Int] -&gt; StdGen -&gt; (Population, StdGen)
+forall a.
+(a -&gt; StdGen -&gt; (Solution, StdGen))
+-&gt; [a] -&gt; StdGen -&gt; (Population, StdGen)
+</span><a href="Lib.html#sequenceRandom"><span class="hs-identifier hs-var">sequenceRandom</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(StdGen -&gt; (Solution, StdGen))
+-&gt; Int -&gt; StdGen -&gt; (Solution, StdGen)
+forall b c a. (b -&gt; c) -&gt; a -&gt; b -&gt; c
+</span><a href="Lib.html#constSnd"><span class="hs-identifier hs-var">constSnd</span></a></span><span> </span><span class="annot"><span class="annottext">((StdGen -&gt; (Solution, StdGen))
+ -&gt; Int -&gt; StdGen -&gt; (Solution, StdGen))
+-&gt; (StdGen -&gt; (Solution, StdGen))
+-&gt; Int
+-&gt; StdGen
+-&gt; (Solution, StdGen)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Crossover
+</span><a href="#local-6989586621679037326"><span class="hs-identifier hs-var">cross</span></a></span><span> </span><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037315"><span class="hs-identifier hs-var">pop</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-glyph">..</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679037328"><span class="hs-identifier hs-var">nPop</span></a></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037314"><span class="hs-identifier hs-var">g2</span></a></span><span>
+</span><span id="line-52"></span><span>                       </span><span class="hs-special">(</span><span id="local-6989586621679037311"><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037311"><span class="hs-identifier hs-var">children'</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679037310"><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037310"><span class="hs-identifier hs-var">g4</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Mutation -&gt; Population -&gt; StdGen -&gt; (Population, StdGen)
+forall a.
+(a -&gt; StdGen -&gt; (Solution, StdGen))
+-&gt; [a] -&gt; StdGen -&gt; (Population, StdGen)
+</span><a href="Lib.html#sequenceRandom"><span class="hs-identifier hs-var">sequenceRandom</span></a></span><span> </span><span class="annot"><span class="annottext">Mutation
+</span><a href="#local-6989586621679037325"><span class="hs-identifier hs-var">mut</span></a></span><span> </span><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037313"><span class="hs-identifier hs-var">children</span></a></span><span> </span><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037312"><span class="hs-identifier hs-var">g3</span></a></span><span>
+</span><span id="line-53"></span><span>                       </span><span class="hs-special">(</span><span id="local-6989586621679037309"><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037309"><span class="hs-identifier hs-var">pop'</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679037308"><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037308"><span class="hs-identifier hs-var">g5</span></a></span></span><span class="hs-special">)</span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Population -&gt; StdGen -&gt; (Population, StdGen)
+</span><a href="#local-6989586621679037323"><span class="hs-identifier hs-var">sel</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037311"><span class="hs-identifier hs-var">children'</span></a></span><span> </span><span class="annot"><span class="annottext">Population -&gt; Population -&gt; Population
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037315"><span class="hs-identifier hs-var">pop</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037310"><span class="hs-identifier hs-var">g4</span></a></span><span>
+</span><span id="line-54"></span><span>                  </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">t -&gt; Population -&gt; StdGen -&gt; (Population, StdGen)
+</span><a href="#local-6989586621679037321"><span class="hs-identifier hs-var">step</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621679037316"><span class="hs-identifier hs-var">n</span></a></span><span class="annot"><span class="annottext">t -&gt; t -&gt; t
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span class="annot"><span class="annottext">t
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Population
+</span><a href="#local-6989586621679037309"><span class="hs-identifier hs-var">pop'</span></a></span><span> </span><span class="annot"><span class="annottext">StdGen
+</span><a href="#local-6989586621679037308"><span class="hs-identifier hs-var">g5</span></a></span><span>
+</span><span id="line-55"></span></pre></body></html>
