@@ -2,8 +2,7 @@ module Main where
 
 import System.Environment
 import System.Random
-import Data.List.Split
-import Numeric.LinearAlgebra
+import Control.Monad.State
 
 import Lib
 
@@ -22,7 +21,9 @@ main = do args <- getArgs
               createSol        = createRndSolution (nVars*nTerms) fitness
               cross            = crossover fitness
               mut              = mutate 0.01 fitness
-              (pops, _)        = ga 100 nPop createSol cross mut fitness sel g
+
+              stGA             = ga 100 nPop createSol cross mut fitness sel 
+              pops             = evalState stGA g
 
           mapM_ print (last pops)
           generateReports xss ys pops

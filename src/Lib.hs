@@ -23,34 +23,23 @@ import GA
 import Fitness
 import Dataset
 import Report
+import Random
 
-import System.Random
+import Control.Monad
 
-type Crossover      = Population -> StdGen -> (Solution, StdGen)
-type Selection      = Population -> StdGen -> (Population, StdGen)
-type CreateSolution = StdGen -> (Solution, StdGen)
-type Mutation       = Solution -> StdGen -> (Solution, StdGen)
-
--- | Sequence random actions that generates a population 
-sequenceRandom :: (a -> StdGen -> (Solution, StdGen)) -> [a] -> StdGen -> (Population, StdGen)
-sequenceRandom f xs g = go xs [] g
-  where
-    go [] pop g'     = (pop, g')
-    go (x:xs) pop g' = let (sol, g'') = f x g'
-                       in  go xs (sol:pop) g''
-
--- | Utility function to ignore first argument
-constSnd :: (b -> c) -> a -> b -> c
-constSnd f a = f 
+type Crossover      = Population -> Rnd Solution 
+type Selection      = Population -> Rnd Population 
+type CreateSolution = Rnd Solution 
+type Mutation       = Solution -> Rnd Solution
 
 -- | Main function for Genetic Algorithm
-ga :: Int -> Int -> CreateSolution -> Crossover -> Mutation -> Fitness -> Selection -> StdGen -> ([Population], StdGen)
-ga it nPop createSol cross mut fit sel g = step it [pop0] g1
+ga :: Int -> Int -> CreateSolution -> Crossover -> Mutation -> Fitness -> Selection -> Rnd [Population]
+ga it nPop createSol cross mut fit sel =
+  do pop0 <- replicateM nPop createSol
+     step it [pop0]
   where
-   (pop0, g1) = sequenceRandom (constSnd createSol) [1..nPop] g 
-
-   step 0 ps g2     = (reverse ps, g2)
-   step n (p:ps) g2 = let (children, g3)  = sequenceRandom (constSnd $ cross p) [1..nPop] g2
-                          (children', g4) = sequenceRandom mut children g3
-                          (pop', g5)      = sel (children' ++ p) g4
-                      in step (n-1) (pop':p:ps) g5
+    step 0 ps = return $ reverse ps
+    step n (p:ps) = do children  <- replicateM nPop (cross p)
+                       children' <- mapM mut children 
+                       p'        <- sel (children' ++ p)
+                       step (n-1) (p':p':ps)

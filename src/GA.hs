@@ -21,6 +21,10 @@ module GA
 import System.Random
 import Numeric.LinearAlgebra (Vector)
 
+import Random
+import Control.Monad
+import Control.Monad.State
+
 -- | Data type representing a solution 
 data Solution = Sol { _vars      :: [Bool]    -- ^ binary vector representing the presence of variables 
                     , _exponents :: [Int]     -- ^ integer vector with exponents
@@ -36,61 +40,44 @@ instance Ord Solution where
 type Population     = [Solution]
 type Fitness        = [Bool] -> [Int] -> Solution
 
+nVars :: Solution -> Int
+nVars s = length (_vars s)
+
 -- | Creates a random solution 
-createRndSolution :: Int -> Fitness -> StdGen -> (Solution, StdGen)
-createRndSolution nLen fit g = (sol, g'')
-  where
-    (g', g'')   = split g
-    (g1', g2')  = split g'
-    vecBool     = take nLen $ randomRs (False, True) g1'
-    vecInt      = take nLen $ randomRs (1, 5) g2'
-    sol         = fit vecBool vecInt 
+createRndSolution :: Int -> Fitness -> Rnd Solution
+createRndSolution nLen fit = 
+  do vars <- replicateM nLen randomBool
+     exps <- replicateM nLen (randomInt (1, 5))
+     return $ fit vars exps
 
 -- | Tournament between two solutions
-tournament :: Population -> StdGen -> (Solution, StdGen)
-tournament pop g = let (s1, g1) = chooseRnd g 
-                       (s2, g2) = chooseRnd g1 
-                   in  (min s1 s2, g2)
-  where
-    chooseRnd g' = let (ix, g'') = randomR (0, length pop - 1) g'
-                   in  (pop !! ix, g'')
+tournament :: Population -> Rnd Solution
+tournament pop = do s1 <- chooseRndFrom pop 
+                    s2 <- chooseRndFrom pop
+                    return (min s1 s2)
 
 -- | Creates a new solution from the combination of two solutions 
-crossover :: Fitness -> Population -> StdGen -> (Solution, StdGen)
-crossover fit pop g = let (sol1, g1) = tournament pop g
-                          (sol2, g2) = tournament pop g1
-                      in  cx fit sol1 sol2 g2 
--- | Performs crossover 
-cx :: Fitness -> Solution -> Solution -> StdGen -> (Solution, StdGen)
-cx fit (Sol p1Bool p1Int _ _) (Sol p2Bool p2Int _ _) g = (child, g')
-  where
-    (ix, g')    = randomR (0, length p1Bool - 1) g
-    childBool   = cx ix p1Bool p2Bool
-    childInt    = cx ix p1Int  p2Int
-    cx ix xs ys = take ix xs ++ drop ix ys
-    child       = fit childBool childInt  
+crossover :: Fitness -> Population -> Rnd Solution
+crossover fit pop = do s1 <- tournament pop
+                       s2 <- tournament pop
+                       ix <- randomInt (0, nVars s1)
+                       return (cx fit ix s1 s2)
 
+-- | Performs crossover 
+cx :: Fitness -> Int -> Solution -> Solution -> Solution 
+cx fit ix sol1 sol2 = fit childVars childExps
+  where
+    recombine xs ys = take ix xs ++ drop ix ys
+    childVars       = recombine (_vars sol1) (_vars sol2)
+    childExps       = recombine (_exponents sol1) (_exponents sol2)
 
 -- | Mutates a single solution
-mutate :: Double -> Fitness -> Solution -> StdGen -> (Solution, StdGen)
-mutate prob fit (Sol vecBool vecInt _ _) g = 
-  let (vecBool', g') = mutateBool vecBool [] g
-      (vecInt', g'') = mutateInt  vecInt  [] g'
-  in  (fit vecBool' vecInt', g'')
-  where
-    mutateBool []     bs' g' = (reverse bs', g')
-    mutateBool (b:bs) bs' g' = let (p, g'') = randomR (0.0, 1.0) g'
-                                   (b', g''') = if p <= prob
-                                                 then random g''
-                                                 else (b, g'')
-                               in  mutateBool bs (b':bs') g''' 
-    mutateInt []  is' g'    = (reverse is', g')
-    mutateInt (i:is) is' g' = let (p, g'') = randomR (0.0, 1.0) g'
-                                  (i', g''') = if p <= prob
-                                                  then randomR (1, 5) g''
-                                                  else (i, g'')
-                              in  mutateInt is (i':is') g'''
+mutate :: Double -> Fitness -> Solution -> Rnd Solution
+mutate prob fit sol = do vars <- randomsWith prob randomBool $ _vars sol
+                         exps <- randomsWith prob (randomInt (1, 5)) $ _exponents sol
+                         return $ fit vars exps
 
+                         
 -- | Select the next generation
-select :: Int -> Population -> StdGen -> (Population, StdGen)
-select n pop g = (take n pop, g)
+select :: Int -> Population -> Rnd Population
+select n pop = return $ take n pop

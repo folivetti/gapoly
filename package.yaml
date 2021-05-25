@@ -25,6 +25,7 @@ dependencies:
 - random >= 1.2
 - hmatrix
 - hvega
+- mtl
 
 library:
   source-dirs: src
