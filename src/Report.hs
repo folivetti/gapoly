@@ -32,7 +32,7 @@ plotEvo pops =
 plotPoly :: [[Double]] -> Vector Double -> Solution -> IO ()
 plotPoly xss ys sol = 
   let x0 = map head xss
-      zss = decode xss (_vars sol) (_exponents sol)
+      zss = decode xss (_chromo sol)
       ysHat = toList $ zss #> _coeffs sol
       ys'   = toList ys
       clusters = replicate (length x0) "poly" ++ replicate (length x0) "real"

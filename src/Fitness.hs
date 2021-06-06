@@ -19,42 +19,39 @@ import Numeric.LinearAlgebra ((<\>),(#>),(|||), sumElements, size, Matrix, Vecto
 evalFitness :: Int            -- ^ number of terms
             -> [[Double]]     -- ^ matrix X
             -> Vector Double  -- ^ vector y
-            -> [Bool]         -- ^ variables of the poly
-            -> [Int]          -- ^ exponents of the poly
+            -> Chromossome    -- ^ chromossome to evaluate
             -> Solution 
-evalFitness nTerms xss ys vecBool vecInt = Sol vecBool vecInt betas f
+evalFitness nTerms xss ys chromo = Sol chromo betas f
   where
-    zss    = decode xss vecBool vecInt
+    zss    = decode xss chromo 
     betas  = zss <\> ys 
     ysHat  = zss #> betas 
     f      = mse ys ysHat
 
 -- | Decodes the polynomial into a transformed matrix 
-decode :: [[Double]] -> [Bool] -> [Int] -> Matrix Double
-decode xss vecBool vecInt = fromRows (map (evalPoly vecBool vecInt) xss)
+decode :: [[Double]] -> Chromossome -> Matrix Double
+decode xss chromo = fromRows (map (evalPoly chromo) xss)
 
 -- | Eval a single row from the dataset 
-evalPoly :: [Bool] -> [Int] -> [Double] -> Vector Double
-evalPoly vecBool vecInt xs = fromList $ 1.0 : go vecBool vecInt 
+evalPoly :: Chromossome -> [Double] -> Vector Double
+evalPoly chromo xs = fromList $ 1.0 : go chromo 
 -- zipWith (evalTerm xs) termsBools termsInts
   where
     nVars           = length xs
 
-    go [] [] = []
-    go bs is = let (bsVars, bs') = splitAt nVars bs 
-                   (isVars, is') = splitAt nVars is
-                   term          = evalTerm xs bsVars isVars
-               in  term `seq` term : go bs' is' 
+    go [] = []
+    go cs = let (cs1, cs2) = splitAt nVars cs 
+                term       = evalTerm xs cs1
+               in  term `seq` term : go cs2
 
 -- | Eval a term of the polynomial 
-evalTerm :: [Double] -> [Bool] -> [Int] -> Double
-evalTerm xs' vecBool vecInt = go vecBool vecInt xs' 1
+evalTerm :: [Double] -> [(Bool, Int)] -> Double
+evalTerm xs' chromo = go chromo xs' 1
   where
-    go [] _ _ !acc = acc
-    go _ [] _ !acc = acc
-    go _ _ [] !acc = acc
-    go (False:bs) (k:ks) (x:xs) !acc = go bs ks xs acc
-    go (True:bs)  (k:ks) (x:xs) !acc = go bs ks xs (acc * x^k)
+    go [] _ !acc = acc
+    go _ [] !acc = acc
+    go ((False, _):cs) (_:xs) !acc = go cs xs acc
+    go ((True,  k):cs) (x:xs) !acc = go cs xs (acc * x^k)
 
 -- | Calculates the mean squared error
 mse :: Vector Double -> Vector Double -> Double

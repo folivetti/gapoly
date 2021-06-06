@@ -15,6 +15,7 @@ module GA
   , mutate
   , Solution(..) 
   , Population
+  , Chromossome
   , Fitness
   ) where
 
@@ -26,29 +27,27 @@ import Control.Monad
 import Control.Monad.State
 
 -- | Data type representing a solution 
-data Solution = Sol { _vars      :: [Bool]    -- ^ binary vector representing the presence of variables 
-                    , _exponents :: [Int]     -- ^ integer vector with exponents
+type Chromossome = [(Bool, Int)]
+
+data Solution = Sol { _chromo    :: Chromossome   -- ^ chromossome representation 
                     , _coeffs    :: Vector Double  -- ^ coefficients of the regression
                     , _fitness   :: Double    -- ^ fitness of an individual 
                     } deriving Show
 
 instance Eq  Solution where
-  (Sol _ _ _ f1) == (Sol _ _ _ f2) = f1 == f2
+  (Sol _ _ f1) == (Sol _ _ f2) = f1 == f2
 instance Ord Solution where
-  (Sol _ _ _ f1) <= (Sol _ _ _ f2) = f1 <= f2
+  (Sol _ _ f1) <= (Sol _ _ f2) = f1 <= f2
 
 type Population     = [Solution]
-type Fitness        = [Bool] -> [Int] -> Solution
+type Fitness        = Chromossome -> Solution
 
 nVars :: Solution -> Int
-nVars s = length (_vars s)
+nVars s = length (_chromo s)
 
 -- | Creates a random solution 
-createRndSolution :: Int -> Fitness -> Rnd Solution
-createRndSolution nLen fit = 
-  do vars <- replicateM nLen randomBool
-     exps <- replicateM nLen (randomInt (1, 5))
-     return $ fit vars exps
+createRndSolution :: Int -> Int -> Fitness -> Rnd Solution
+createRndSolution maxK nLen fit = fit <$> replicateM nLen (randomPair (1, maxK))
 
 -- | Tournament between two solutions
 tournament :: Population -> Rnd Solution
@@ -65,18 +64,15 @@ crossover fit pop = do s1 <- tournament pop
 
 -- | Performs crossover 
 cx :: Fitness -> Int -> Solution -> Solution -> Solution 
-cx fit ix sol1 sol2 = fit childVars childExps
+cx fit ix sol1 sol2 = fit child
   where
     recombine xs ys = take ix xs ++ drop ix ys
-    childVars       = recombine (_vars sol1) (_vars sol2)
-    childExps       = recombine (_exponents sol1) (_exponents sol2)
+    child           = recombine (_chromo sol1) (_chromo sol2)
+
 
 -- | Mutates a single solution
-mutate :: Double -> Fitness -> Solution -> Rnd Solution
-mutate prob fit sol = do vars <- randomsWith prob randomBool $ _vars sol
-                         exps <- randomsWith prob (randomInt (1, 5)) $ _exponents sol
-                         return $ fit vars exps
-
+mutate :: Int -> Double -> Fitness -> Solution -> Rnd Solution
+mutate maxK prob fit sol = fit <$> biRandomsWith prob randomBool (randomInt (1, maxK)) (_chromo sol)
                          
 -- | Select the next generation
 select :: Int -> Population -> Rnd Population

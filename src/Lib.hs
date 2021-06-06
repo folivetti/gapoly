@@ -10,12 +10,7 @@ Portability : POSIX
 
 module Lib
     ( parseFile
-    , evalFitness    
-    , select 
-    , createRndSolution
-    , crossover
-    , mutate
-    , ga
+    , runGA
     , generateReports
     ) where
 
@@ -26,11 +21,26 @@ import Report
 import Random
 
 import Control.Monad
+import Control.Monad.State
+import System.Random
+import Numeric.LinearAlgebra (Vector)
 
 type Crossover      = Population -> Rnd Solution 
 type Selection      = Population -> Rnd Population 
 type CreateSolution = Rnd Solution 
 type Mutation       = Solution -> Rnd Solution
+
+-- | Run a genetic algorithm with the provided parameters
+runGA :: Int -> Int -> Int -> Int -> Int -> Double -> [[Double]] -> Vector Double -> IO [Population]
+runGA nTerms nVars it nPop maxK pm xss ys =
+  do g <- newStdGen 
+     let fitness   = evalFitness nTerms xss ys
+         sel       = select nPop
+         createSol = createRndSolution maxK (nVars*nTerms) fitness
+         cross     = crossover fitness
+         mut       = mutate maxK pm fitness
+         stGA      = ga it nPop createSol cross mut fitness sel
+     return $ evalState stGA g
 
 -- | Main function for Genetic Algorithm
 ga :: Int -> Int -> CreateSolution -> Crossover -> Mutation -> Fitness -> Selection -> Rnd [Population]
