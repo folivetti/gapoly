@@ -5,6 +5,7 @@ import Graphics.Vega.VegaLite hiding (Sum)
 import Prelude hiding (filter, lookup, repeat)
 import Data.Monoid (Sum(..))
 import Numeric.LinearAlgebra ((#>), Vector, toList)
+import Data.Maybe
 
 import GA
 import Fitness 
@@ -12,7 +13,7 @@ import Fitness
 avgfit :: Population -> Double
 avgfit pop = getSum tot / fromIntegral (length pop)
   where
-    tot = foldMap (Sum . _fitness) pop
+    tot = foldMap (Sum . fromJust . _fitness) pop
 
 -- | Plot the evolution of average fitness along the generations
 plotEvo :: [Population] -> IO ()
@@ -33,7 +34,7 @@ plotPoly :: [[Double]] -> Vector Double -> Solution -> IO ()
 plotPoly xss ys sol = 
   let x0 = map head xss
       zss = decode xss (_chromo sol)
-      ysHat = toList $ zss #> _coeffs sol
+      ysHat = toList $ zss #> (fromJust . _coeffs) sol
       ys'   = toList ys
       clusters = replicate (length x0) "poly" ++ replicate (length x0) "real"
       plotData = dataFromColumns []

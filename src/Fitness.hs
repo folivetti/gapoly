@@ -19,11 +19,14 @@ import Numeric.LinearAlgebra ((<\>),(#>),(|||), sumElements, size, Matrix, Vecto
 evalFitness :: Int            -- ^ number of terms
             -> [[Double]]     -- ^ matrix X
             -> Vector Double  -- ^ vector y
-            -> Chromossome    -- ^ chromossome to evaluate
+            -> Solution       -- ^ solution to evaluate
             -> Solution 
-evalFitness nTerms xss ys chromo = Sol chromo betas f
+evalFitness nTerms xss ys sol = 
+  case _fitness sol of
+       Nothing -> sol{ _coeffs = Just betas, _fitness = Just f }
+       _       -> sol 
   where
-    zss    = decode xss chromo 
+    zss    = decode xss (_chromo sol) 
     betas  = zss <\> ys 
     ysHat  = zss #> betas 
     f      = mse ys ysHat

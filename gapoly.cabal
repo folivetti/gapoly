@@ -39,6 +39,7 @@ library
       base >=4.7 && <5
     , hmatrix
     , hvega
+    , monad-extras
     , mtl
     , random >=1.2
     , split
@@ -54,6 +55,7 @@ executable gapoly-exe
     , gapoly
     , hmatrix
     , hvega
+    , monad-extras
     , mtl
     , random >=1.2
     , split
@@ -70,6 +72,7 @@ test-suite gapoly-test
     , gapoly
     , hmatrix
     , hvega
+    , monad-extras
     , mtl
     , random >=1.2
     , split

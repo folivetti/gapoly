@@ -26,6 +26,7 @@ dependencies:
 - hmatrix
 - hvega
 - mtl
+- monad-extras
 
 library:
   source-dirs: src
