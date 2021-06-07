@@ -1,4 +1,4 @@
-{-# language StrictData, BangPatterns #-}
+{-# language BangPatterns #-}
 module Evolution 
   ( runEvolution
   , evalEvoPar
@@ -57,7 +57,7 @@ evalEvoSeq fit (Select sel evo1 evo2) pop =
 evalEvoSeq fit (Cross cross evo) pop =
   do let nPop = length pop
      pop' <- map fit <$> replicateM nPop (cross pop) 
-     evalEvoSeq fit evo pop
+     evalEvoSeq fit evo pop'
 
 evalEvoSeq fit (Mutate mut evo) pop =
   do pop' <- map fit <$> mapM mut pop
@@ -78,7 +78,7 @@ evalEvoPar fit (Cross cross evo) pop =
          f g'    = force . fit <$> evalStateT (cross pop) g' 
      pop' <- liftIO $ traverseConcurrently (ParN 0) f gs
      put gi
-     evalEvoPar fit evo pop
+     evalEvoPar fit evo pop'
 
 evalEvoPar fit (Mutate mut evo) pop =
   do g <- get
