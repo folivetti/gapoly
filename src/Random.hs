@@ -7,6 +7,10 @@ import Data.Bool
 
 type Rnd a = State StdGen a 
 
+class RandomAlele a where
+  randomProb :: Double -> a -> Rnd a
+  randomAlele :: Rnd a
+
 randomBool :: Rnd Bool
 randomBool = state random
 

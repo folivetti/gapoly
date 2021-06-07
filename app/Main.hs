@@ -14,11 +14,11 @@ main = do args <- getArgs
           dat <- readFile dataname
           let (xss, ys, nVars) = parseFile dat
               nTerms           = 5
-              nPop             = 100
-              nIter            = 100
+              nPop             = 1000
+              nIter            = 1000
               maxK             = 5
               pm               = 0.01
 
-          pops <- runGA nTerms nVars nIter nPop maxK pm xss ys
-          mapM_ print (last pops)
-          generateReports xss ys pops
+          (avgs, best) <- runGA nTerms nVars nIter nPop maxK pm xss ys
+          print $ _fitness best
+          generateReports xss ys avgs best

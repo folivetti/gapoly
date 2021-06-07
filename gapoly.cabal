@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Dataset
+      Evolution
       Fitness
       GA
       Lib
@@ -37,6 +38,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , deepseq
     , hmatrix
     , hvega
     , monad-extras
@@ -52,6 +54,7 @@ executable gapoly-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -O2 -optc-O3
   build-depends:
       base >=4.7 && <5
+    , deepseq
     , gapoly
     , hmatrix
     , hvega
@@ -69,6 +72,7 @@ test-suite gapoly-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , deepseq
     , gapoly
     , hmatrix
     , hvega

@@ -12,6 +12,8 @@ Portability : POSIX
 module Fitness (evalFitness, decode) where
 
 import GA
+
+import Data.List (foldl')
 import Data.List.Split hiding (split)
 import Numeric.LinearAlgebra ((<\>),(#>),(|||), sumElements, size, Matrix, Vector, fromRows, fromList)
 
@@ -19,42 +21,36 @@ import Numeric.LinearAlgebra ((<\>),(#>),(|||), sumElements, size, Matrix, Vecto
 evalFitness :: Int            -- ^ number of terms
             -> [[Double]]     -- ^ matrix X
             -> Vector Double  -- ^ vector y
-            -> Solution       -- ^ solution to evaluate
-            -> Solution 
+            -> Solution Poly       -- ^ solution to evaluate
+            -> Solution Poly 
 evalFitness nTerms xss ys sol = 
   case _fitness sol of
        Nothing -> sol{ _coeffs = Just betas, _fitness = Just f }
        _       -> sol 
   where
-    zss    = decode xss (_chromo sol) 
+    zss    = decode xss (map _getPoly $ _chromo sol) 
     betas  = zss <\> ys 
     ysHat  = zss #> betas 
     f      = mse ys ysHat
 
 -- | Decodes the polynomial into a transformed matrix 
-decode :: [[Double]] -> Chromossome -> Matrix Double
+decode :: [[Double]] -> [(Bool, Int)] -> Matrix Double
 decode xss chromo = fromRows (map (evalPoly chromo) xss)
 
 -- | Eval a single row from the dataset 
-evalPoly :: Chromossome -> [Double] -> Vector Double
-evalPoly chromo xs = fromList $ 1.0 : go chromo 
--- zipWith (evalTerm xs) termsBools termsInts
+evalPoly :: [(Bool, Int)] -> [Double] -> Vector Double
+evalPoly chromo xs = fromList $ foldl' joinTerms [1.0] terms 
   where
-    nVars           = length xs
+    nVars = length xs
+    ix    = cycle [0..nVars-1]
+    xss   = cycle xs
+    terms = zip3 chromo xss ix 
 
-    go [] = []
-    go cs = let (cs1, cs2) = splitAt nVars cs 
-                term       = evalTerm xs cs1
-               in  term `seq` term : go cs2
+    joinTerms ts   ((False,_), _, 0)   = 1.0 : ts
+    joinTerms ts   ((False,_), _, _)   = ts
+    joinTerms ts   ((True, k), x, 0)   = x^k : ts
+    joinTerms (t:ts) ((True,k), x, ix) = t * x^k : ts
 
--- | Eval a term of the polynomial 
-evalTerm :: [Double] -> [(Bool, Int)] -> Double
-evalTerm xs' chromo = go chromo xs' 1
-  where
-    go [] _ !acc = acc
-    go _ [] !acc = acc
-    go ((False, _):cs) (_:xs) !acc = go cs xs acc
-    go ((True,  k):cs) (x:xs) !acc = go cs xs (acc * x^k)
 
 -- | Calculates the mean squared error
 mse :: Vector Double -> Vector Double -> Double

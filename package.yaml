@@ -27,6 +27,7 @@ dependencies:
 - hvega
 - mtl
 - monad-extras
+- deepseq
 
 library:
   source-dirs: src
