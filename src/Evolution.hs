@@ -1,16 +1,20 @@
-{-# language BangPatterns #-}
+{-# language StrictData, BangPatterns #-}
 module Evolution 
   ( runEvolution
-  , eval
+  , evalEvoPar
+  , evalEvoSeq
   , Evolution(..)
   ) where
 
 import Control.Monad
+import Control.Monad.State.Strict
 import Control.Monad.Extra
 import System.Random
 import Data.Monoid
 import Data.Maybe
 import Control.DeepSeq (force)
+import Control.Parallel.Strategies
+import Control.Scheduler
 
 import GA
 import Fitness
@@ -42,30 +46,62 @@ simplify (Mutate mut evo) =
 simplify End = End
 
 -- | Evals a single iteration of an evolutionary process 
-eval :: Fitness a -> Evolution a -> Population a -> Rnd (Population a)
-eval _ End pop = return pop
+evalEvoSeq :: Fitness a -> Evolution a -> Population a -> Rnd (Population a)
+evalEvoSeq _ End pop = return pop
 
-eval fit (Select sel evo1 evo2) pop = 
-  do pop1 <- eval fit evo1 pop
-     pop2 <- eval fit evo2 pop
-     sel (map fit pop1) (map fit pop2)
+evalEvoSeq fit (Select sel evo1 evo2) pop = 
+  do pop1 <- evalEvoSeq fit evo1 pop
+     pop2 <- evalEvoSeq fit evo2 pop
+     sel pop1 pop2
 
-eval fit (Cross cross evo) pop =
+evalEvoSeq fit (Cross cross evo) pop =
   do let nPop = length pop
-     pop' <- replicateM nPop $ cross $ map fit pop 
-     eval fit evo pop
+     pop' <- map fit <$> replicateM nPop (cross pop) 
+     evalEvoSeq fit evo pop
 
-eval fit (Mutate mut evo) pop =
-  do pop' <- mapM mut pop
-     eval fit evo pop'
+evalEvoSeq fit (Mutate mut evo) pop =
+  do pop' <- map fit <$> mapM mut pop
+     evalEvoSeq fit evo pop'
 
+evalEvoPar :: NFData a => Fitness a -> Evolution a -> Population a -> Rnd (Population a)
+evalEvoPar _ End pop = return pop
+
+evalEvoPar fit (Select sel evo1 evo2) pop = 
+  do pop1 <- evalEvoPar fit evo1 pop
+     pop2 <- evalEvoPar fit evo2 pop
+     sel pop1 pop2
+
+evalEvoPar fit (Cross cross evo) pop =
+  do g <- get 
+     let nPop = length pop
+         (gi:gs) = genSeeds (nPop + 1) g 
+         f g'    = force . fit <$> evalStateT (cross pop) g' 
+     pop' <- liftIO $ traverseConcurrently (ParN 0) f gs
+     put gi
+     evalEvoPar fit evo pop
+
+evalEvoPar fit (Mutate mut evo) pop =
+  do g <- get
+     let (gi:gs)   = genSeeds (length pop + 1) g
+         f (p, g') = force . fit <$> evalStateT (mut p) g'
+     pop' <- liftIO $ traverseConcurrently (ParN 0) f $ zip pop gs
+     put gi
+     evalEvoPar fit evo pop' 
+
+-- | split a random seed into n seeds
+genSeeds :: Int -> StdGen -> [StdGen]
+genSeeds 0 g = []
+genSeeds n g = let (g1,g2) = split g
+               in  g1 : genSeeds (n-1) g2
+
+-- | Calculates the average fitness of a population 
 avgfit :: Population a -> Double
 avgfit pop = getSum tot / fromIntegral (length pop)
   where
     tot = foldMap (Sum . fromJust . _fitness) pop
 
 -- | Runs an evolutionary process 
-runEvolution :: CreateSolution a -> Fitness a -> Int -> Int -> Evolution a -> Rnd ([Double], Solution a)
+runEvolution :: NFData a => CreateSolution a -> Fitness a -> Int -> Int -> Evolution a -> Rnd ([Double], Solution a)
 runEvolution createSol fit nGens nPop evo =
   do pop0 <- map fit <$> replicateM nPop createSol
      go nGens pop0 ([avgfit pop0], minimum pop0)
@@ -73,7 +109,7 @@ runEvolution createSol fit nGens nPop evo =
     evo' = simplify evo
 
     go 0 pop (!avgs, !best) = return (reverse avgs, best)
-    go n pop (!avgs, !best) = do pop' <- eval fit evo' pop
+    go n pop (!avgs, !best) = do pop' <- evalEvoPar fit evo' pop
                                  let avgs' = force $ avgfit pop' : avgs
                                      best' = min best (minimum pop')
                                  go (n-1) pop' (avgs', best')

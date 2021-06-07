@@ -22,7 +22,7 @@ import Report
 import Random
 import Evolution
 
-import Control.Monad.State
+import Control.Monad.State.Strict
 import System.Random
 import Numeric.LinearAlgebra (Vector)
 
@@ -38,5 +38,5 @@ runGA nTerms nVars it nPop maxK pm xss ys =
      let fitness   = evalFitness nTerms xss ys
          createSol = createRndSolution (nVars*nTerms) 
          gens      = runEvolution createSol fitness it nPop (gaPoly pm)
-     return $ evalState gens g
+     evalStateT gens g
 

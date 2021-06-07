@@ -1,3 +1,4 @@
+{-# language DeriveGeneric, DeriveAnyClass, StrictData #-}
 {-|
 Module      : GA
 Description : Genetic Algorithm for Poly Regression
@@ -24,10 +25,12 @@ import Numeric.LinearAlgebra (Vector)
 
 import Random
 import Control.Monad
-import Control.Monad.State
+import Control.Monad.State.Strict
+import GHC.Generics (Generic)
+import Control.DeepSeq
 
 -- | Data type representing a solution 
-newtype Poly = Poly { _getPoly :: (Bool, Int) } deriving Show
+newtype Poly = Poly { _getPoly :: (Bool, Int) } deriving (Show, Generic, NFData)
 
 instance RandomAlele Poly where
   randomProb p x = Poly <$> biRandomWith p randomBool (randomInt (1,5)) (_getPoly x)
@@ -36,7 +39,7 @@ instance RandomAlele Poly where
 data Solution a = Sol { _chromo    :: [a]                    -- ^ chromossome representation 
                       , _coeffs    :: Maybe (Vector Double)  -- ^ coefficients of the regression
                       , _fitness   :: Maybe Double           -- ^ fitness of an individual 
-                      } deriving Show
+                      } deriving (Show, Generic, NFData)
 
 instance Eq (Solution a) where
   (Sol _ _ f1) == (Sol _ _ f2) = f1 == f2
