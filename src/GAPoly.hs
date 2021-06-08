@@ -8,11 +8,12 @@ Stability   : experimental
 Portability : POSIX
 |-}
 
-module Lib
+module GAPoly
     ( parseFile
     , runGA
     , generateReports
     , Solution(..)
+    , Poly(..)
     ) where
 
 import GA
@@ -25,15 +26,16 @@ import Evolution
 import Control.Monad.State.Strict
 import System.Random
 import Numeric.LinearAlgebra (Vector)
+import GHC.TypeLits
 
-gaPoly :: Double -> Evolution Poly
+gaPoly :: KnownNat n => Double -> Evolution (Poly n)
 gaPoly pm = Select generational End
               (Cross crossover
                 (Mutate (mutate pm) End))
 
 -- | Run a genetic algorithm with the provided parameters
-runGA :: Int -> Int -> Int -> Int -> Int -> Double -> [[Double]] -> Vector Double -> IO ([Double], Solution Poly)
-runGA nTerms nVars it nPop maxK pm xss ys =
+runGA :: KnownNat n => Int -> Int -> Int -> Int -> Double -> [[Double]] -> Vector Double -> IO ([Double], Solution (Poly n))
+runGA nTerms nVars it nPop pm xss ys =
   do g <- newStdGen 
      let fitness   = evalFitness nTerms xss ys
          createSol = createRndSolution (nVars*nTerms) 

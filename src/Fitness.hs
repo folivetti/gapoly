@@ -21,8 +21,8 @@ import Numeric.LinearAlgebra ((<\>),(#>),(|||), sumElements, size, Matrix, Vecto
 evalFitness :: Int            -- ^ number of terms
             -> [[Double]]     -- ^ matrix X
             -> Vector Double  -- ^ vector y
-            -> Solution Poly       -- ^ solution to evaluate
-            -> Solution Poly 
+            -> Solution (Poly n)       -- ^ solution to evaluate
+            -> Solution (Poly n) 
 evalFitness nTerms xss ys sol = 
   case _fitness sol of
        Nothing -> sol{ _coeffs = Just betas, _fitness = Just f }

@@ -1,10 +1,13 @@
+{-# language DataKinds, ScopedTypeVariables #-}
 module Main where
 
 import System.Environment
 import System.Random
 import Control.Monad.State
+import GHC.TypeLits
+import Data.Proxy
 
-import Lib
+import GAPoly
 
 main :: IO ()
 main = do args <- getArgs 
@@ -14,11 +17,13 @@ main = do args <- getArgs
           dat <- readFile dataname
           let (xss, ys, nVars) = parseFile dat
               nTerms           = 5
-              nPop             = 1000
-              nIter            = 1000
+              nPop             = 100
+              nIter            = 100
               maxK             = 5
               pm               = 0.01
-
-          (avgs, best) <- runGA nTerms nVars nIter nPop maxK pm xss ys
-          print $ _fitness best
-          generateReports xss ys avgs best
+          case someNatVal maxK of
+               Just (SomeNat (_ :: Proxy n)) ->
+                 do (avgs, best) <- runGA nTerms nVars nIter nPop pm xss ys
+                    print $ _fitness (best :: Solution (Poly n))
+                    generateReports xss ys avgs best
+               Nothing -> error "Negative maxK"

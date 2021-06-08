@@ -29,7 +29,7 @@ library
       Evolution
       Fitness
       GA
-      Lib
+      GAPoly
       Random
       Report
   other-modules:

@@ -1,4 +1,5 @@
 {-# language DeriveGeneric, DeriveAnyClass, StrictData #-}
+{-# language KindSignatures, DataKinds, ScopedTypeVariables #-}
 {-|
 Module      : GA
 Description : Genetic Algorithm for Poly Regression
@@ -28,13 +29,17 @@ import Control.Monad
 import Control.Monad.State.Strict
 import GHC.Generics (Generic)
 import Control.DeepSeq
+import GHC.TypeLits 
+import Data.Proxy
 
 -- | Data type representing a solution 
-newtype Poly = Poly { _getPoly :: (Bool, Int) } deriving (Show, Generic, NFData)
+newtype Poly (n :: Nat) = Poly { _getPoly :: (Bool, Int) } deriving (Show, Generic, NFData)
 
-instance RandomAlele Poly where
-  randomProb p x = Poly <$> biRandomWith p randomBool (randomInt (1,5)) (_getPoly x)
-  randomAlele    = Poly <$> randomPair (1, 5)
+instance KnownNat n => RandomAlele (Poly n) where
+  randomProb p x = Poly <$> biRandomWith p randomBool (randomInt (1, maxK)) (_getPoly x)
+    where maxK = fromIntegral $ natVal (Proxy :: Proxy n)
+  randomAlele    = Poly <$> randomPair (1, maxK)
+    where maxK = fromIntegral $ natVal (Proxy :: Proxy n)
 
 data Solution a = Sol { _chromo    :: [a]                    -- ^ chromossome representation 
                       , _coeffs    :: Maybe (Vector Double)  -- ^ coefficients of the regression
